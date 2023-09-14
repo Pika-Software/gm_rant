@@ -13,21 +13,28 @@ mod rant_api;
 #[macro_use] extern crate gmod;
 
 mod lua_api {
-    use std::sync::Arc;
-    use crate::{state_container::get_state, utils, rant_api};
+    use crate::{state_container::get_state, utils, rant_api, app_state::AppState};
 
-    #[derive(Debug)]
-    pub struct Test(u32);
-    impl Drop for Test {
-        fn drop(&mut self) {
-            println!("dropped test");
-        }
-    }
-
-    pub(crate) unsafe extern "C-unwind" fn __gc<T: Sized>(lua: gmod::lua::State) -> i32 {
+    pub unsafe extern "C-unwind" fn __gc<T: Sized>(lua: gmod::lua::State) -> i32 {
         let userdata = lua.to_userdata(1) as *mut T;
         std::ptr::read(userdata);
         0
+    }
+
+    pub unsafe extern "C-unwind" fn rant_program_tostring<T: Sized>(lua: gmod::lua::State) -> i32 {
+        let program = &*(lua.to_userdata(1) as *mut rant::RantProgram);
+        let s = format!("RantProgram {:?}", program.name().or(program.path()).or(Some("<unnamed>")));
+        lua.push_string(&s);
+        1
+    }
+
+    pub unsafe fn is_program_userdata(lua: gmod::lua::State, state: &AppState, index: i32) -> bool {
+        if lua.lua_type(index) != gmod::lua::LUA_TUSERDATA { return false; }
+        if lua.get_metatable(index) == 0 { return false; }
+        lua.from_reference(state.program_meta);
+        let eq = lua.equal(-2, -1);
+        lua.pop_n(2);
+        eq
     }
 
     pub unsafe extern "C-unwind" fn rant_compile(lua: gmod::lua::State) -> i32 {
@@ -35,40 +42,39 @@ mod lua_api {
         let code = lua.check_string(1);
         let program = match rant_api::compile(&state, &code) {
             Ok(v) => v,
-            Err(e) => { lua.push_nil(); lua.push_string(&e); return 2; },
+            Err(e) => { lua.push_nil(); lua.push_string(&e.to_string()); return 2; },
         };
 
         lua.from_reference(state.program_meta);
-        lua.new_userdata( Test(123), Some(-1));
+        lua.new_userdata(program, Some(-1));
         1
-
-        // let a = lua.check_userdata(1, lua_string!("RantProgram")).read().data.cast::<Arc<RantProgram>>().read();
     }
 
-    pub unsafe extern "C-unwind" fn rant_test(lua: gmod::lua::State) -> i32 {
-        let userdata = lua.to_userdata(1) as *mut Test;
-        let data = &*userdata;
-        println!("test: {:#?}", data);
-        0
+    unsafe fn rant_run_inner(lua: gmod::lua::State, state: &AppState) -> Result<rant::RantValue, anyhow::Error> {
+        if lua.lua_type(1) == gmod::lua::LUA_TSTRING {
+            let code = lua.get_string(1).unwrap();
+            return rant_api::compile_and_run(&state, &code);
+        } else if is_program_userdata(lua, &state, 1) {
+            let program = &*(lua.to_userdata(1) as *mut rant::RantProgram);
+            return rant_api::run(&state, program);
+        } else {
+            return Err(anyhow::anyhow!("Invalid argument #1: expected string or RantProgram"));
+        }
     }
 
     pub unsafe extern "C-unwind" fn rant_run(lua: gmod::lua::State) -> i32 {
         let state = match get_state(lua) { Some(v) => v, None => return 0 };
-        if lua.lua_type(1) == gmod::lua::LUA_TSTRING {
-            let code = lua.get_string(1).unwrap();
-            match rant_api::compile_and_run(&state, &code) {
-                Ok(v) => {
-                    lua.push_nil();
-                    utils::push_rant_result(lua, &v).map_err(|e| lua.error(e)).ok();
-                },
-                Err(e) => {
-                    lua.push_string(&e);
-                    lua.push_nil();
-                },
-            };
-            return 2;
-        }
-        0
+        match rant_run_inner(lua, &state) {
+            Ok(v) => {
+                utils::push_rant_result(lua, &v).map_err(|e| lua.error(e)).ok();
+                lua.push_nil();
+            },
+            Err(e) => {
+                lua.push_nil();
+                lua.push_string(&e.to_string());
+            },
+        };
+        return 2;
     }
 }
 
@@ -86,7 +92,7 @@ unsafe extern "C-unwind" fn gmod13_open(lua: gmod::lua::State) -> i32 {
     gmod::gmcl::override_stdout();
 
     lua.new_metatable(lua_string!("RantProgram"));
-    lua.push_function(lua_api::__gc::<lua_api::Test>); lua.set_field(-2, lua_string!("__gc"));
+    lua.push_function(lua_api::__gc::<rant::RantProgram>); lua.set_field(-2, lua_string!("__gc"));
     let program_meta = lua.reference();
 
     let state = initialize_state(program_meta);
@@ -95,7 +101,6 @@ unsafe extern "C-unwind" fn gmod13_open(lua: gmod::lua::State) -> i32 {
     lua.create_table(0, 0);
     lua.push_function(lua_api::rant_compile); lua.set_field(-2, lua_string!("compile"));
     lua.push_function(lua_api::rant_run); lua.set_field(-2, lua_string!("run"));
-    lua.push_function(lua_api::rant_test); lua.set_field(-2, lua_string!("test"));
     lua.set_global(lua_string!("rant"));
     0
 }
