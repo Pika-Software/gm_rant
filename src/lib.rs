@@ -66,7 +66,7 @@ mod lua_api {
         let state = match get_state(lua) { Some(v) => v, None => return 0 };
         match rant_run_inner(lua, &state) {
             Ok(v) => {
-                utils::push_rant_result(lua, &v).map_err(|e| lua.error(e)).ok();
+                utils::push_rant_result(lua, &v).map_err(|e| lua.error(e.to_string())).ok();
                 lua.push_nil();
             },
             Err(e) => {
