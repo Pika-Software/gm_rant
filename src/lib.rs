@@ -52,7 +52,6 @@ mod lua_api {
 
     unsafe fn rant_run_inner(lua: gmod::lua::State, state: &AppState) -> Result<rant::RantValue, anyhow::Error> {
         let args = utils::parse_lua_args(lua, 2)?;
-        println!("args: {:?}", args);
         if lua.lua_type(1) == gmod::lua::LUA_TSTRING {
             let code = lua.get_string(1).unwrap();
             return rant_api::compile_and_run(&state, &code, args);
