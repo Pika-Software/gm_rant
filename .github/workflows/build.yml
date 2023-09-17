@@ -80,8 +80,8 @@ jobs:
 
     - name: Move output
       run: |
-        cp target/release/gm_rant.so gmsv_rant_osx64.dll
-        cp target/release/gm_rant.so gmcl_rant_osx64.dll
+        cp target/release/libgm_rant.dylib gmsv_rant_osx64.dll
+        cp target/release/libgm_rant.dylib gmcl_rant_osx64.dll
 
     - uses: actions/upload-artifact@v3
       with:
