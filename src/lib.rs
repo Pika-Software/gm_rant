@@ -103,6 +103,7 @@ unsafe extern "C-unwind" fn gmod13_open(lua: gmod::lua::State) -> i32 {
     lua.create_table(0, 0);
     lua.push_function(lua_api::rant_compile); lua.set_field(-2, lua_string!("compile"));
     lua.push_function(lua_api::rant_run); lua.set_field(-2, lua_string!("run"));
+    lua.push_string(env!("CARGO_PKG_VERSION")); lua.set_field(-2, lua_string!("VERSION"));
     lua.set_global(lua_string!("rant"));
     0
 }

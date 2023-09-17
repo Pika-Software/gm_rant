@@ -5,6 +5,8 @@ Currently this module is built with Rant 4 (4.0.0-alpha.33)
 
 ## API
 ```lua
+rant.VERSION = "x.y.z" -- Version of gm_rant module
+
 -- Compiles rant code into program
 -- Returns RantProgram on success
 -- On failure returns nil and error string
