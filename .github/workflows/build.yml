@@ -19,6 +19,8 @@ jobs:
     - name: Build
       run: cargo build -r --verbose
 
+    - run: ls -la target/release
+
     - name: Move output
       run: |
         cp target/release/gm_rant.so gmsv_rant_linux64.dll
