@@ -51,12 +51,14 @@ mod lua_api {
     }
 
     unsafe fn rant_run_inner(lua: gmod::lua::State, state: &AppState) -> Result<rant::RantValue, anyhow::Error> {
+        let args = utils::parse_lua_args(lua, 2)?;
+        println!("args: {:?}", args);
         if lua.lua_type(1) == gmod::lua::LUA_TSTRING {
             let code = lua.get_string(1).unwrap();
-            return rant_api::compile_and_run(&state, &code);
+            return rant_api::compile_and_run(&state, &code, args);
         } else if is_program_userdata(lua, &state, 1) {
             let program = &*(lua.to_userdata(1) as *mut rant::RantProgram);
-            return rant_api::run(&state, program);
+            return rant_api::run(&state, program, args);
         } else {
             return Err(anyhow::anyhow!("Invalid argument #1: expected string or RantProgram"));
         }

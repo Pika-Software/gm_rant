@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rant::{RantValue, RantProgram};
 
 use crate::app_state::AppState;
@@ -8,12 +10,12 @@ pub fn compile(state: &AppState, code: &str) -> Result<RantProgram, anyhow::Erro
     Ok(program)
 }
 
-pub fn run(state: &AppState, program: &RantProgram) -> Result<RantValue, anyhow::Error> {
+pub fn run<A: Into<Option<HashMap<String, RantValue>>>>(state: &AppState, program: &RantProgram, args: A) -> Result<RantValue, anyhow::Error> {
     let mut rant = state.rant.lock().map_err(|e| anyhow::anyhow!(".rant mutex is poisoned"))?;
-    let result = rant.run(program)?;
+    let result = rant.run_with(program, args)?;
     Ok(result)
 }
 
-pub fn compile_and_run(state: &AppState, code: &str) -> Result<RantValue, anyhow::Error> {
-    return run(state, &compile(state, code)?);
+pub fn compile_and_run<A: Into<Option<HashMap<String, RantValue>>>>(state: &AppState, code: &str, args: A) -> Result<RantValue, anyhow::Error> {
+    return run(state, &compile(state, code)?, args);
 }
