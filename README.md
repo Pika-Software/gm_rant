@@ -11,7 +11,6 @@ Currently this module is built with Rant 4 (4.0.0-alpha.33)
 rant.compile(code: string) -> RantProgram/nil, nil/string
 
 -- Compiles and runs rant code. Returns program output or error
-rant.run(code: string) -> RantOutput/nil, nil/string
--- Runs precompiled rant program. Returns program output or error
-rant.run(program: RantProgram) -> RantOutput/nil, nil/string
+-- Arguments must consist of table with string key and any value
+rant.run(code: string/RantProgram, args?: table) -> RantOutput/nil, nil/string
 ```
