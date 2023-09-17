@@ -10,7 +10,35 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - run: rustup default nightly
+    - name: Build
+      run: cargo build -r --verbose
+
+    - name: Move output
+      run: |
+        cp target/release/gm_rant.dll gmsv_rant_win64.dll
+        cp target/release/gm_rant.dll gmcl_rant_win64.dll
+        
+    - name: Build x32
+      run: cargo build -r --verbose --target i686-pc-windows-msvc
+      
+    - name: Move output
+      run: |
+        cp target/release/gm_rant.dll gmsv_rant_win32.dll
+        cp target/release/gm_rant.dll gmcl_rant_win32.dll
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: Windows
+        path: |
+          ./*.dll
+
+  build-linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,17 +47,41 @@ jobs:
     - name: Build
       run: cargo build -r --verbose
 
-    - run: ls -la target/release
-
     - name: Move output
       run: |
-        cp target/release/gm_rant.so gmsv_rant_linux64.dll
-        cp target/release/gm_rant.so gmcl_rant_linux64.dll
+        cp target/release/libgm_rant.so gmsv_rant_linux64.dll
+        cp target/release/libgm_rant.so gmcl_rant_linux64.dll
         
     - name: Build x32
       run: cargo build -r --verbose --target i686-unknown-linux-gnu
       
     - name: Move output
       run: |
-        cp target/release/gm_rant.so gmsv_rant_linux.dll
-        cp target/release/gm_rant.so gmcl_rant_linux.dll
+        cp target/release/libgm_rant.so gmsv_rant_linux.dll
+        cp target/release/libgm_rant.so gmcl_rant_linux.dll
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: Linux
+        path: |
+          ./*.dll
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - run: rustup default nightly
+    - name: Build
+      run: cargo build -r --verbose
+
+    - name: Move output
+      run: |
+        cp target/release/libgm_rant.so gmsv_rant_osx64.dll
+        cp target/release/libgm_rant.so gmcl_rant_osx64.dll
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: OSX
+        path: |
+          ./*.dll
