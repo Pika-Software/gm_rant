@@ -16,6 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: rustup default nightly
+    - run: rustup target add i686-pc-windows-msvc
     - name: Build
       run: cargo build -r --verbose
 
@@ -44,6 +45,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: rustup default nightly
+    - run: rustup target add i686-unknown-linux-gnu
+    - run: sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib
     - name: Build
       run: cargo build -r --verbose
 
@@ -77,8 +80,8 @@ jobs:
 
     - name: Move output
       run: |
-        cp target/release/libgm_rant.so gmsv_rant_osx64.dll
-        cp target/release/libgm_rant.so gmcl_rant_osx64.dll
+        cp target/release/gm_rant.so gmsv_rant_osx64.dll
+        cp target/release/gm_rant.so gmcl_rant_osx64.dll
 
     - uses: actions/upload-artifact@v3
       with:
